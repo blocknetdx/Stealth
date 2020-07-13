@@ -584,18 +584,26 @@ public:
     bool IsPayToScriptHash() const;
 
     // Called by CTransaction::IsStandard and P2SH VerifyScript (which makes it consensus-critical).
-    bool IsPushOnly() const
+    bool IsPushOnly(const_iterator pc) const
     {
-        const_iterator pc = begin();
         while (pc < end())
         {
             opcodetype opcode;
             if (!GetOp(pc, opcode))
                 return false;
+            // Note that IsPushOnly() *does* consider OP_RESERVED to be a
+            // push-type opcode, however execution of OP_RESERVED fails, so
+            // it's not relevant to P2SH/BIP62 as the scriptSig would fail prior to
+            // the P2SH special validation code being executed.
             if (opcode > OP_16)
                 return false;
         }
         return true;
+    }
+
+    bool IsPushOnly() const
+    {
+        return this->IsPushOnly(begin());
     }
 
     // Called by CTransaction::IsStandard.
@@ -655,7 +663,6 @@ bool IsDERSignature(const valtype &vchSig, bool haveHashType = true);
 bool IsCompressedOrUncompressedPubKey(const valtype &vchPubKey);
 bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& script, const CTransaction& txTo, unsigned int nIn, unsigned int flags, int nHashType);
 bool Solver(const CScript& scriptPubKey, txnouttype& typeRet, std::vector<std::vector<unsigned char> >& vSolutionsRet);
-int ScriptSigArgsExpected(txnouttype t, const std::vector<std::vector<unsigned char> >& vSolutions);
 bool IsStandard(const CScript& scriptPubKey, txnouttype& whichType);
 bool IsMine(const CKeyStore& keystore, const CScript& scriptPubKey);
 bool IsMine(const CKeyStore& keystore, const CTxDestination &dest);
